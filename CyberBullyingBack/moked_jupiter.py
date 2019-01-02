@@ -83,13 +83,13 @@ def plotPieAndBar(df,title,isSide=True,isGrouped=True,plot_method='both',barSize
 no_features = 1000
     
 dataset=pd.read_excel("F:\Erez\Dropbox\Personal\Research2018\סורוקה.דיגיטל\moked\mokeddata.xlsx","Sheet1")
-col = "תיאור1" #
+col = "תיאור1"
 corpus = []
 
 for i in range(0, 34526):
     review = re.sub('[^א-ת]', ' ', dataset[col][i])
     corpus.append(review)
-    
+
 df = pd.DataFrame(data=corpus)
 stop_words = fileToList('F:\Erez\Dropbox\Personal\Research2018\סורוקה.דיגיטל\moked\heb_stopwords.txt')
 list1 = traverse(" ".join(df[0]).split())
@@ -153,7 +153,7 @@ plotFreqWords(df,title='Frequency of words in entire data')
 # In[152]:
 
 font_path = os.path.join(os.path.join(os.environ['WINDIR'], 'Fonts'),'ahronbd.ttf')
-wc = wordcloud.WordCloud(background_color='white', font_path=font_path,  max_words=100,stopwords=stop_words)   
+wc = wordcloud.WordCloud(background_color='white', font_path=font_path,  max_words=100,stopwords=stop_words)
 wc.generate_from_frequencies(list(top_words.items()))
 plt.imshow(wc, interpolation='bilinear')
 plt.axis("off")

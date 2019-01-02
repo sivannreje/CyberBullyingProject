@@ -6,12 +6,25 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import NMF, LatentDirichletAllocation
+import wordcloud
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 data_path = 'data.csv'
 cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
 df = pd.read_csv(data_path, delimiter=',', names=cols)
 
+def traverse(a):
+    if type(a) is list:
+        return [''.join(wrd[-1:-(len(wrd)+1):-1]) if type(wrd) is str and len(wrd)>0 and wrd[0] in 'אבגדהוזחטיכלמנסעפצקרשת' else wrd for wrd in a ]
+    elif type(a) is str: return traverse([a])[0]
+    elif type(a) is set: return set(traverse(list(a)))
+    elif type(a) is dict: dict(zip(traverse(a.keys()),traverse(a.values())))
+    elif type(a) == type(pd.Series()): return pd.Series(data=traverse(list(a)),index=a.index,name=a.name)
+    elif type(a) == type(type(pd.DataFrame())): return a.applymap(lambda x: traverse(x))
+    return a
 
 def get_common_words(dataframe, number):
     text = dataframe.text.tolist()
@@ -111,7 +124,7 @@ def extract_topn_from_vector(feature_names, sorted_items, topn=10):
         results[feature_vals[idx]] = score_vals[idx]
 
     return results
-create_tf_idf(df, 10)
+# create_tf_idf(df, 10)
 
 
 def num_of_abusive_per_column(df, column_name):
@@ -136,8 +149,28 @@ def get_abusive_df(df):
     return df.loc[df['cb_level'] == '3']
 
 
-def create_LDA_model(df):
-    pass
+def create_LDA_model(df, no_topics):
+    vectorizer = CountVectorizer(min_df=10, max_df=0.6, encoding="cp1255")
+    matrix = vectorizer.fit_transform(df['text'])
+    feature_names = vectorizer.get_feature_names()
+    lda = LatentDirichletAllocation(n_components=no_topics, max_iter=5, learning_method='online',
+                                    learning_offset=50., random_state=0).fit(matrix)
+    create_word_cloud(no_topics, lda, feature_names)
+    return lda
 
+def create_word_cloud(no_topics, lda, feature_names):
+    font_path = os.path.join(os.path.join(os.environ['WINDIR'], 'Fonts'), 'ahronbd.ttf')
+    for i in range(0, no_topics):
+        d = dict(zip(traverse(feature_names), lda.components_[i]))
+        wc = wordcloud.WordCloud(background_color='white', font_path=font_path, max_words=100)
+        image = wc.generate_from_frequencies(d)
+        image.to_file('wordcloud'+str(i)+'.png')
+        plt.imshow(wc, interpolation='bilinear')
+        plt.axis("off")
+        plt.figure()
+        # plt.show()
+
+# lda_res = create_LDA_model(df, 10)
 # df_ab = num_of_abusive_per_column(df, 'source')
 # print(df_ab)
+
