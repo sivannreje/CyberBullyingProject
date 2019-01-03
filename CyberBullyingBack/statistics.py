@@ -26,6 +26,7 @@ def traverse(a):
     return a
 
 def get_common_words(dataframe, number):
+    print(stop_words)
     text = dataframe.text.tolist()
     tokens = []
     for post in text:
@@ -34,10 +35,11 @@ def get_common_words(dataframe, number):
     word_frequency = {}
 
     for word in tokens:
-        if word not in word_frequency:
-            word_frequency[word] = 1
-        else:
-            word_frequency[word] += 1
+        if word not in stop_words:
+            if word not in word_frequency:
+                word_frequency[word] = 1
+            else:
+                word_frequency[word] += 1
 
     word_counter = collections.Counter(word_frequency)
     most_common_dictionary = word_counter.most_common(number)
@@ -64,7 +66,7 @@ def create_tf_idf(dataframe, num_of_words):
     # create a vocabulary of words,
     # ignore words that appear in 85% of documents,
     # eliminate stop words
-    cv = CountVectorizer(max_df=0.85)  # , stop_words=stopwords)
+    cv = CountVectorizer(max_df=0.85, stop_words=stop_words)  # , stop_words=stopwords)
     word_count_vector = cv.fit_transform(posts)
 
     tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
@@ -87,6 +89,7 @@ def create_tf_idf(dataframe, num_of_words):
         # now print the results
 
         dict[post] = [(k, keywords[k]) for k in keywords]
+        #print(print_tf_idf_dict(dict))
     return dict
 
 
@@ -191,19 +194,12 @@ def plot_tf_idf_post(dictionary_tf_idf, title, unique=False):
     plt.show()
 
 
-    #pd.DataFrame(data=corpus)
-    # if unique:
-    #     counts = Counter(traverse([w for w in chain(*list(df[0].
-    #                                                       apply(lambda x: list(set(x.split(" ")))))) if len(w)>0 and w not in stop_words]))
-    # else:
-    #     counts = Counter(traverse([w for w in chain(*list(df[0].apply(lambda x: x.split(" ")))) if len(w)>0 and w not in stop_words]))
-    #
-    # counts = Counter(traverse([w for w in chain]))
-    # df2= pd.DataFrame.from_dict(dict(counts.most_common(20)),orient='index').sort_values(by=0,ascending=False)
-    # pl = df2.plot(kind='bar',figsize=(15,7),fontsize=8, legend=False,title=title)
-    # for p in pl.patches:
-    #     pl.annotate(str(p.get_height()), (p.get_x() * 0.98, p.get_height() * 1.001),fontsize=14)
-    # plt.show()
+def plot_length_posts(dictionary_length, title, unique=False):
+    df2 = pd.DataFrame.from_dict(dictionary_length, orient='index').sort_values(by=0, ascending=False)
+    pl = df2.plot(kind='bar', figsize=(15, 7), fontsize=8, legend=False, title=traverse(title))
+    for p in pl.patches:
+        pl.annotate(str(p.get_height()), (p.get_x() * 0.98, p.get_height() * 1.001), fontsize=14)
+    plt.show()
 
 
 # main
@@ -211,10 +207,10 @@ stop_words = preprocess.get_stop_words()
 all_corpus = 'allData.csv'
 data_path = 'data.csv'
 cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
-corpus_frame = pd.read_csv(all_corpus, delimiter=',', names=cols)
-corpus_list = preprocess.clean_tokens(corpus_frame)
-corpus_frame['text'] = corpus_list
-print(get_common_words(corpus_frame,20))
+# corpus_frame = pd.read_csv(all_corpus, delimiter=',', names=cols)
+# corpus_list = preprocess.clean_tokens(corpus_frame)
+# corpus_frame['text'] = corpus_list
+# print(get_common_words(corpus_frame,20))
 
 df = pd.read_csv(data_path, delimiter=',', names=cols)
 list_posts = preprocess.clean_tokens(df)
@@ -229,9 +225,20 @@ df_no_abusive = get_no_abusive_df(df)
 # lda_result_no_abusive = create_LDA_model(df_no_abusive, 5,'no_abusive')
 
 # tf idf
-# number_tf_idf = 5
-# dictionary_tf_idf = create_tf_idf(df,number_tf_idf)
-# my_post = 'לכל מי ששואל  אמא שלך זונה  אמא שלך עוזרת ליהודים להרוס ערים של פלשתים ימח שמם  שבת נפלאה ומרגשת'
-# plot_tf_idf_post(dictionary_tf_idf, title=my_post)
+number_tf_idf = 5
+dictionary_tf_idf = create_tf_idf(df,number_tf_idf)
+my_post = 'בושה שישנם כאלה אנשים במדינה שלנו ימח שמך יחתיכת זוהמה'
+plot_tf_idf_post(dictionary_tf_idf, title=my_post)
+
+# length
+# length_abusive_dictionary = get_post_length(df_abusive)
+# avg_length_abusive = float(sum(length_abusive_dictionary.values())/float(len(length_abusive_dictionary)))
+# length_no_abusive_dictionary = get_post_length(df_no_abusive)
+# avg_length_no_abusive = float(sum(length_no_abusive_dictionary.values())/float(len(length_no_abusive_dictionary)))
+# dictionary_length = {}
+# dictionary_length[traverse('abusive')] = avg_length_abusive
+# dictionary_length[traverse('no abusive')] = avg_length_no_abusive
+# plot_length_posts(dictionary_length, title='Avg length of posts')
+
 
 
