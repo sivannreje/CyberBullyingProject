@@ -12,10 +12,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-data_path = 'data.csv'
-cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
-df = pd.read_csv(data_path, delimiter=',', names=cols)
-
 def traverse(a):
     if type(a) is list:
         return [''.join(wrd[-1:-(len(wrd)+1):-1]) if type(wrd) is str and len(wrd)>0 and wrd[0] in 'אבגדהוזחטיכלמנסעפצקרשת' else wrd for wrd in a ]
@@ -40,9 +36,10 @@ def get_common_words(dataframe, number):
         else:
             word_frequency[word] += 1
 
-    word_counter = collections.Counter(word_frequency)  # TODO: return the dict and print it separately
-    for word, count in word_counter.most_common(number):
-        print(word, ": ", count)
+    word_counter = collections.Counter(word_frequency)
+    most_common_dictionary = word_counter.most_common(number)
+
+    return most_common_dictionary
 
 
 # get_common_words(df, 10)
@@ -170,7 +167,13 @@ def create_word_cloud(no_topics, lda, feature_names):
         plt.figure()
         # plt.show()
 
-# lda_res = create_LDA_model(df, 10)
+
+data_path = 'data.csv'
+cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
+df = pd.read_csv(data_path, delimiter=',', names=cols)
+df_abusive = get_abusive_df(df)
+
+lda_res = create_LDA_model(df_abusive, 3)
 # df_ab = num_of_abusive_per_column(df, 'source')
 # print(df_ab)
 
