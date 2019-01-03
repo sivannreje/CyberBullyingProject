@@ -11,6 +11,8 @@ import wordcloud
 import matplotlib
 import matplotlib.pyplot as plt
 
+from CyberBullyingBack import preprocess
+
 
 def traverse(a):
     if type(a) is list:
@@ -146,34 +148,48 @@ def get_abusive_df(df):
     return df.loc[df['cb_level'] == '3']
 
 
-def create_LDA_model(df, no_topics):
-    vectorizer = CountVectorizer(min_df=10, max_df=0.6, encoding="cp1255")
+def get_no_abusive_df(df):
+    return df.loc[df['cb_level'] == '1']
+
+
+def create_LDA_model(df, no_topics,name_image):
+    global stop_words
+    print(stop_words)
+    vectorizer = CountVectorizer(min_df=10, max_df=0.6, encoding="cp1255", stop_words=stop_words)
     matrix = vectorizer.fit_transform(df['text'])
     feature_names = vectorizer.get_feature_names()
     lda = LatentDirichletAllocation(n_components=no_topics, max_iter=5, learning_method='online',
                                     learning_offset=50., random_state=0).fit(matrix)
-    create_word_cloud(no_topics, lda, feature_names)
+    create_word_cloud(no_topics, lda, feature_names,name_image)
     return lda
 
-def create_word_cloud(no_topics, lda, feature_names):
+def create_word_cloud(no_topics, lda, feature_names,name_image):
+    global stop_words
     font_path = os.path.join(os.path.join(os.environ['WINDIR'], 'Fonts'), 'ahronbd.ttf')
     for i in range(0, no_topics):
         d = dict(zip(traverse(feature_names), lda.components_[i]))
-        wc = wordcloud.WordCloud(background_color='white', font_path=font_path, max_words=100)
+        wc = wordcloud.WordCloud(background_color='white', font_path=font_path, max_words=100,stopwords=stop_words)
         image = wc.generate_from_frequencies(d)
-        image.to_file('wordcloud'+str(i)+'.png')
+        image.to_file(name_image+str(i)+'.png')
         plt.imshow(wc, interpolation='bilinear')
         plt.axis("off")
         plt.figure()
         # plt.show()
 
 
+stop_words = preprocess.get_stop_words()
 data_path = 'data.csv'
 cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
 df = pd.read_csv(data_path, delimiter=',', names=cols)
+list_posts = preprocess.clean_tokens(df)
+df['text'] = list_posts
 df_abusive = get_abusive_df(df)
+df_no_abusive = get_no_abusive_df(df)
 
-lda_res = create_LDA_model(df_abusive, 3)
+lda_result_abusive = create_LDA_model(df, 5,'all_data')
+lda_result_abusive = create_LDA_model(df_abusive, 3,'abusive')
+lda_result_no_abusive = create_LDA_model(df_no_abusive, 5,'no_abusive')
+
 # df_ab = num_of_abusive_per_column(df, 'source')
 # print(df_ab)
 
