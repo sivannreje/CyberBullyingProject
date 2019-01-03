@@ -24,7 +24,7 @@ def clean_tokens(df):
     text = df.text.tolist()
     number_posts = len(text)
     for index_post in range(1,number_posts):
-        text[index_post] = re.sub(r'[^א-ת]', ' ', text[index_post])
+        text[index_post] = re.sub(r'[^א-ת]', ' ', text[index_post]).strip().rstrip()
     return text
 
 

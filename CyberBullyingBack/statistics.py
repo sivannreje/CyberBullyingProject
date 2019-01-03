@@ -8,9 +8,10 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import NMF, LatentDirichletAllocation
 import wordcloud
+from itertools import chain
 import matplotlib
 import matplotlib.pyplot as plt
-
+from collections import Counter
 from CyberBullyingBack import preprocess
 
 
@@ -55,9 +56,10 @@ def get_post_length(dataframe):
     return post_frequency
 
 
-def create_tf_idf(dataframe, num_of_words):   # TODO: finish
+def create_tf_idf(dataframe, num_of_words):
     # get the text column
     posts = dataframe['text'].tolist()
+    dict = {}
 
     # create a vocabulary of words,
     # ignore words that appear in 85% of documents,
@@ -83,9 +85,10 @@ def create_tf_idf(dataframe, num_of_words):   # TODO: finish
         keywords = extract_topn_from_vector(feature_names, sorted_items, num_of_words)
 
         # now print the results
-        dict = {}
+
         dict[post] = [(k, keywords[k]) for k in keywords]
-        print(print_tf_idf_dict(dict))
+    return dict
+
 
 
 def print_tf_idf_dict(tf_idf_dict):
@@ -154,7 +157,6 @@ def get_no_abusive_df(df):
 
 def create_LDA_model(df, no_topics,name_image):
     global stop_words
-    print(stop_words)
     vectorizer = CountVectorizer(min_df=10, max_df=0.6, encoding="cp1255", stop_words=stop_words)
     matrix = vectorizer.fit_transform(df['text'])
     feature_names = vectorizer.get_feature_names()
@@ -177,19 +179,59 @@ def create_word_cloud(no_topics, lda, feature_names,name_image):
         # plt.show()
 
 
+def plot_tf_idf_post(dictionary_tf_idf, title, unique=False):
+    dic_post = dict(dictionary_tf_idf[title])
+    dic_post_travers = {}
+    for term,val in dic_post.items():
+        dic_post_travers[traverse(term)] = val
+    df2 = pd.DataFrame.from_dict(dic_post_travers,orient='index').sort_values(by=0,ascending=False)
+    pl = df2.plot(kind='bar',figsize=(15,7),fontsize=8, legend=False,title=traverse(title))
+    for p in pl.patches:
+        pl.annotate(str(p.get_height()), (p.get_x() * 0.98, p.get_height() * 1.001),fontsize=14)
+    plt.show()
+
+
+    #pd.DataFrame(data=corpus)
+    # if unique:
+    #     counts = Counter(traverse([w for w in chain(*list(df[0].
+    #                                                       apply(lambda x: list(set(x.split(" ")))))) if len(w)>0 and w not in stop_words]))
+    # else:
+    #     counts = Counter(traverse([w for w in chain(*list(df[0].apply(lambda x: x.split(" ")))) if len(w)>0 and w not in stop_words]))
+    #
+    # counts = Counter(traverse([w for w in chain]))
+    # df2= pd.DataFrame.from_dict(dict(counts.most_common(20)),orient='index').sort_values(by=0,ascending=False)
+    # pl = df2.plot(kind='bar',figsize=(15,7),fontsize=8, legend=False,title=title)
+    # for p in pl.patches:
+    #     pl.annotate(str(p.get_height()), (p.get_x() * 0.98, p.get_height() * 1.001),fontsize=14)
+    # plt.show()
+
+
+# main
 stop_words = preprocess.get_stop_words()
+all_corpus = 'allData.csv'
 data_path = 'data.csv'
 cols = ['id', 'time', 'source', 'sub_source', 'writer', 'link', 'text', 'cb_level', 'comment_shared_post']
+corpus_frame = pd.read_csv(all_corpus, delimiter=',', names=cols)
+corpus_list = preprocess.clean_tokens(corpus_frame)
+corpus_frame['text'] = corpus_list
+print(get_common_words(corpus_frame,20))
+
 df = pd.read_csv(data_path, delimiter=',', names=cols)
 list_posts = preprocess.clean_tokens(df)
 df['text'] = list_posts
+
 df_abusive = get_abusive_df(df)
 df_no_abusive = get_no_abusive_df(df)
 
-lda_result_abusive = create_LDA_model(df, 5,'all_data')
-lda_result_abusive = create_LDA_model(df_abusive, 3,'abusive')
-lda_result_no_abusive = create_LDA_model(df_no_abusive, 5,'no_abusive')
+# topic modelling
+# lda_result_abusive = create_LDA_model(df, 5,'all_data')
+# lda_result_abusive = create_LDA_model(df_abusive, 3,'abusive')
+# lda_result_no_abusive = create_LDA_model(df_no_abusive, 5,'no_abusive')
 
-# df_ab = num_of_abusive_per_column(df, 'source')
-# print(df_ab)
+# tf idf
+# number_tf_idf = 5
+# dictionary_tf_idf = create_tf_idf(df,number_tf_idf)
+# my_post = 'לכל מי ששואל  אמא שלך זונה  אמא שלך עוזרת ליהודים להרוס ערים של פלשתים ימח שמם  שבת נפלאה ומרגשת'
+# plot_tf_idf_post(dictionary_tf_idf, title=my_post)
+
 
